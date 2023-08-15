@@ -1,0 +1,6 @@
+name: Combat
+description: To prevent the player from escaping during combat and knowing if the player is in Combat or not
+author: AEDXDEV
+version: 1.0.0
+main: AEDXDEV\Combat\Main
+api: 5.0.0
