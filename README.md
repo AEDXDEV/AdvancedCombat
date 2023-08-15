@@ -34,4 +34,4 @@ BannedCommands:
 ```
 
 # Other
-- [![YouTube](https://youtube.com/@AEDXDEV)](https://youtube.com/@AEDXDEV)
+- [![https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png](https://youtube.com/@AEDXDEV)]
