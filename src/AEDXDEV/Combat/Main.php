@@ -143,9 +143,9 @@ class Main extends PluginBase implements Listener {
 	public function CombatTask() {
 	  foreach ($this->combat as $players => $time){
       if($time == 0){
-        $this->unCombatPlayers($players);
+        $this->unCombatName($players);
         } else {
-          $this->combat[$name]--;
+          $this->combat[$players]--;
         }
 		}
 	}
