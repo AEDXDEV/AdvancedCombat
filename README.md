@@ -15,13 +15,13 @@ Combat::getInstaance()->hasCombatName($name);
 Combat::getInstaance()->addCombat($player1, $player2);
 
 // To add the names of the players to Combat
-Combat::getInstaance()->addCombatBame("playername1:playername2");
+Combat::getInstaance()->addCombatName("playername1:playername2");
 
 // To remove the player from Combat
 Combat::getInstaance()->unCombat($player);
 
 // To remove the names of the players from Combat
-Combat::getInstaance()->unCombatPlayers("playername1:playername2");
+Combat::getInstaance()->unCombatName("playername1:playername2");
 ```
 
 # Config
