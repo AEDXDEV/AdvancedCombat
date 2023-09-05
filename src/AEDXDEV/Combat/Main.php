@@ -1,4 +1,5 @@
 <?php
+
 namespace AEDXDEV\Combat;
 
 use pocketmine\plugin\PluginBase;
@@ -6,7 +7,6 @@ use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\player\PlayerDeathEvent;
-use pocketmine\event\server\CommandEvent;
 use pocketmine\event\entity\ProjectileHitEntityEvent;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\player\Player;
@@ -20,15 +20,13 @@ class Main extends PluginBase implements Listener {
   public Config $config;
   public bool $Enable = true;
   public int $Time = 10;
-  public array $commands = [];
-  
   public static $instance;
   
   public function onLoad(): void{
 		self::$instance = $this;
 	}
 	
-	public static function getInstaance(): Main{
+	public static function getInstance(): Main{
 		return self::$instance;
 	}
   
@@ -37,11 +35,9 @@ class Main extends PluginBase implements Listener {
 		$config = new Config($this->getDataFolder() . "config.yml", 2, [
 		  "Enable" => true,
 		  "Time" => 10,
-		  "BannedCommands" => ["/kill", "/tp"]
-	  ]);
+		]);
 	  $this->Enable = $config->get("Enable", false);
 	  $this->Time = $config->get("Time", 10);
-	  $this->commands = array_map("strtolower", $config->getNested("BannedCommands", []));
 	}
 	
 	public function onDamage(EntityDamageEvent $event){
@@ -52,10 +48,7 @@ class Main extends PluginBase implements Listener {
 	}
 	
 	public function onProjectileHit(ProjectileHitEntityEvent $event) {
-    $arrow = $event->getEntity();
-    $owner = $arrow->getOwningEntity();
-    $target = $event->getEntityHit();
-    if($arrow instanceof Arrow && $owner instanceof Player && $target instanceof Player) {
+    if(($arrow = $event->getEntity()) instanceof Arrow && ($owner = $arrow->getOwningEntity()) instanceof Player && ($target = $event->getEntityHit()) instanceof Player) {
       $this->addCombat($owner, $target);
     }
   }
@@ -67,19 +60,6 @@ class Main extends PluginBase implements Listener {
 	  }
 	}
   
-	public function onUseCommand(CommandEvent $event) {
-	  $player = $event->getSender();
-	  $cmd = $event->getCommand();
-	  if ($player instanceof Player) {
-      if ($this->hasCombat($player)) {
-  	    if (in_array($cmd, $this->commands)) {
-  		    $player->sendMessage("§cYou can\'t use commands in Combat");
-  		    $event->cancel();
-  		  }
-  	  }
-	  }
-	}
-	
 	public function addCombat(Player $damager, Player $entity) {
 	  if ($this->hasCombat($damager) || $this->hasCombat($entity)){
 	    $this->unCombat($damager);
