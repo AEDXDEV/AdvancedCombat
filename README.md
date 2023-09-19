@@ -15,7 +15,7 @@ Combat::getInstance()->hasCombatName($name);
 Combat::getInstance()->addCombat($player1, $player2);
 
 // To add the names of the players to Combat
-Combat::getInstance()->addCombatBame("playername1:playername2");
+Combat::getInstance()->addCombatName("playername1:playername2");
 
 // To remove the player from Combat
 Combat::getInstance()->unCombat($player);
