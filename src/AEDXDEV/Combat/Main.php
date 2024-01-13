@@ -41,7 +41,7 @@ class Main extends PluginBase implements Listener {
 	  $this->Enable = $config->get("Enable", false);
 	  $this->Time = $config->get("Time", 10);
 	  $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(static function(): void{
-	    self::$instance->CombatTask();
+	    Main::$instance->CombatTask();
 		}), 20);
 	}
 	
