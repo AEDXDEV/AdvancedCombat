@@ -10,7 +10,7 @@ use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\entity\ProjectileHitEntityEvent;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\player\Player;
-use pocketmine\scheduler\Task;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Config;
 
 class Main extends PluginBase implements Listener {
@@ -20,6 +20,7 @@ class Main extends PluginBase implements Listener {
   public Config $config;
   public bool $Enable = true;
   public int $Time = 10;
+  
   public static $instance;
   
   public function onLoad(): void{
@@ -34,10 +35,14 @@ class Main extends PluginBase implements Listener {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 		$config = new Config($this->getDataFolder() . "config.yml", 2, [
 		  "Enable" => true,
-		  "Time" => 10,
+		  "Time" => 10
 		]);
+		$this->config = $config;
 	  $this->Enable = $config->get("Enable", false);
 	  $this->Time = $config->get("Time", 10);
+	  $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(static function(): void{
+	    self::$instance->CombatTask();
+		}), 20);
 	}
 	
 	public function onDamage(EntityDamageEvent $event){
@@ -48,7 +53,7 @@ class Main extends PluginBase implements Listener {
 	}
 	
 	public function onProjectileHit(ProjectileHitEntityEvent $event) {
-    if(($arrow = $event->getEntity()) instanceof Arrow && ($owner = $arrow->getOwningEntity()) instanceof Player && ($target = $event->getEntityHit()) instanceof Player) {
+    if(($arrow = $event->getEntity()) instanceof Arrow && ($owner = $arrow->getOwningEntity()) instanceof Player && ($target = $event->getEntityHit()) instanceof Player && $this->Enable) {
       $this->addCombat($owner, $target);
     }
   }
@@ -61,22 +66,34 @@ class Main extends PluginBase implements Listener {
 	}
   
 	public function addCombat(Player $damager, Player $entity) {
-	  if ($this->hasCombat($damager) || $this->hasCombat($entity)){
-	    $this->unCombat($damager);
-	    $this->unCombat($entity);
-	  }
 	  $players = $damager->getName() . ":" . $entity->getName();
+	  if ($this->hasCombat($damager) || $this->hasCombat($entity)){
+	    $this->unCombatName($players);
+	  }
 	  $this->combat[$players] = $this->Time;
 	}
 	
 	public function addCombatName(string $players) {
 	  $p = explode(":", $players);
 	  if ($this->hasCombatName($p[0]) || $this->hasCombatName($p[1])){
-	    $this->unCombatName($p[0]);
-	    $this->unCombatName($p[1]);
+	    $this->unCombatName($players);
 	  }
-	  $players = $p[0] . ":" . $p[1];
 	  $this->combat[$players] = $this->Time;
+	}
+	
+	public function getPlayerCombat(Player $player): ?Player{
+	  $player_ = null;
+	  $name = $player->getName();
+		foreach($this->combat as $players => $time) {
+		  $p = explode(":", $players);
+		  if ($name === $p[0]) {
+		    $player_ = $this->getServer()->getPlayerExact($p[1]);
+		  }
+		  if ($name === $p[1]) {
+		    $player_ = $this->getServer()->getPlayerExact($p[0]);
+		  }
+		}
+		return $player_;
 	}
 	
 	public function unCombat(Player $player) {
@@ -92,40 +109,36 @@ class Main extends PluginBase implements Listener {
 	
 	public function unCombatName(string $players) {
 	  $p = explode(":", $players);
-	  if (!$this->hasCombatName($p[0]))return false;
-	  if (!$this->hasCombatName($p[1]))return false;
+	  if (!$this->hasCombatName($p[0]) && !$this->hasCombatName($p[1]))return false;
 		unset($this->combat[$players]);
 	}
 	
 	public function hasCombat(Player $player): bool{
 	  $name = $player->getName();
-	  $bool = false;
 	  foreach ($this->combat as $players => $time) {
 	    $p = explode(":", $players);
 	    if ($name === $p[0] or $name === $p[1]) {
-	      $bool = true;
+	      return true;
 	    }
 	  }
-	  return $bool;
+	  return false;
 	}
 	
 	public function hasCombatName(string $name): bool{
-	  $bool = false;
 	  foreach ($this->combat as $players => $time) {
 	    $p = explode(":", $players);
 	    if ($name === $p[0] or $name === $p[1]) {
-	      $bool = true;
+	      return true;
 	    }
 	  }
-	  return $bool;
+	  return false;
 	}
-	
 	public function CombatTask() {
 	  foreach ($this->combat as $players => $time){
       if($time == 0){
         $this->unCombatName($players);
         } else {
-          $this->combat[$players]--;
+          --$this->combat[$players];
         }
 		}
 	}
