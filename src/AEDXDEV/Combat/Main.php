@@ -23,11 +23,11 @@ class Main extends PluginBase implements Listener {
   
   public Config $config;
   
-  public bool $isPluginEnable = true;
-  public bool $sameCombat = false;
-  public bool $sendMessages = true;
-  public array $messages = [];
-  public int $combatTime = 10;
+  private bool $isPluginEnabled = true;
+  private bool $sameCombat = false;
+  private bool $sendMessages = true;
+  private array $messages = [];
+  private int $combatTime = 10;
   
 	public function onEnable(): void{
 	  self::setInstance($this);
@@ -44,7 +44,7 @@ class Main extends PluginBase implements Listener {
 		  "Time" => 10,
 		]);
 		$this->config = $config;
-	  $this->isPluginEnable = $config->get("Enable", false);
+	  $this->isPluginEnabled = $config->get("Enable", false);
 	  $this->sameCombat = $config->get("CancelIfNotInSameCombat", false);
 	  $this->sendMessages = $config->get("sendMessages", false);
 	  $this->messages = $config->get("Messages", [
