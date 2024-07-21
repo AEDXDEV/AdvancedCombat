@@ -23,11 +23,11 @@ class Main extends PluginBase implements Listener {
   
   public Config $config;
   
-  private bool $isPluginEnable = true;
-  private bool $sameCombat = false;
-  private bool $sendMessages = true;
-  private array $messages = [];
-  private int $combatTime = 10;
+  public bool $isPluginEnable = true;
+  public bool $sameCombat = false;
+  public bool $sendMessages = true;
+  public array $messages = [];
+  public int $combatTime = 10;
   
 	public function onEnable(): void{
 	  self::setInstance($this);
@@ -65,15 +65,15 @@ class Main extends PluginBase implements Listener {
 	    if (!$this->isPluginEnabled || $event->isCancelled())return;
 	    if ($damager instanceof Player && $entity instanceof Player) {
 	      if ($entity->isCreative() || $damager->isCreative())return;
-	      if($entity->getHealth() <= $event->getFinalDamage()){
-	        $this->removeCombat($entity);
-	        return;
-	      }
 	      if ($this->isInSameCombat($damager, $entity) && $this->sameCombat) {
 	        if ($this->sendMessages) {
-	          $player->sendMessage($this->messages["InSameCombat"]);
+	          $damager->sendMessage($this->messages["InSameCombat"]);
 	        }
 	        $event->cancel();
+	        return;
+	      }
+	      if($entity->getHealth() <= $event->getFinalDamage()){
+	        $this->removeCombat($entity);
 	        return;
 	      }
 	      $this->addCombat($damager, $entity);
