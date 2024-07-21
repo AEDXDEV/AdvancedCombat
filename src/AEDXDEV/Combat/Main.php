@@ -6,6 +6,7 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\entity\ProjectileHitEvent;
 use pocketmine\event\entity\ProjectileHitEntityEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\entity\projectile\Arrow;
@@ -81,21 +82,23 @@ class Main extends PluginBase implements Listener {
 	  }
 	}
 	
-	public function onProjectileHit(ProjectileHitEntityEvent $event): void{
+	public function onProjectileHit(ProjectileHitEvent $event): void{
 	  $projectile = $event->getEntity();
-	  if ($projectile instanceof Arrow) {
-	    $owner = $projectile->getOwningEntity();
-	    $target = $event->getEntityHit();
-	    if (!$this->isPluginEnabled || $event->isCancelled())return;
-	    if ($owner instanceof Player && $target instanceof Player) {
-	      if ($this->isInSameCombat($owner, $target) && $this->sameCombat) {
-	        if ($this->sendMessages) {
-	          $owner->sendMessage($this->messages["InSameCombat"]);
-	        }
-	        $event->cancel();
-	        return;
+	  if ($event instanceof ProjectileHitEntityEvent) {
+	    if ($projectile instanceof Arrow) {
+  	    $owner = $projectile->getOwningEntity();
+  	    $target = $event->getEntityHit();
+  	    if (!$this->isPluginEnabled || $event->isCancelled())return;
+  	    if ($owner instanceof Player && $target instanceof Player) {
+  	      if ($this->isInSameCombat($owner, $target) && $this->sameCombat) {
+  	        if ($this->sendMessages) {
+  	          $owner->sendMessage($this->messages["InSameCombat"]);
+  	        }
+  	        $event->cancel();
+  	        return;
+  	      }
+  	      $this->addCombat($owner, $target);
 	      }
-	      $this->addCombat($owner, $target);
 	    }
 	  }
   }
@@ -121,6 +124,9 @@ class Main extends PluginBase implements Listener {
 	  $key = $damager->getName() . ":" . $target->getName();
 	  if ($this->isInCombat($damager) || $this->isInCombat($target)) {
 	    return;
+	  }
+	  if ($target->getCurrentWindow() !== null){
+	    $target->removeCurrentWindow();
 	  }
 	  $this->combat[$key] = $this->combatTime;
 	  if ($this->sendMessages) {
