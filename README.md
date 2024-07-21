@@ -1,42 +1,71 @@
-# Combat
-To prevent the player from escaping during combat and knowing if the player is in Combat or not
+# Combat Plugin
+This plugin prevents players from escaping during combat and allows you to check if a player is currently engaged in combat.
 
-# API
+## Features
+- Prevent players from escaping during combat.
+- Check if a player is in combat.
+- Manage combat status programmatically.
+
+## API
+
+### Checking Combat Status
 ```php
 use AEDXDEV\Combat\Main as Combat;
 
-// To knowing if the player is in Combat or not
-/*return true or false if it exists*/
-Combat::getInstance()->hasCombat($player);
+// Check if a player is in combat
+// Returns true if the player is in combat, false otherwise
+Combat::getInstance()->isInCombat($player);
+```
 
-// To knowing if the playername is in Combat or not
-/*return true or false if it exists*/
-Combat::getInstance()->hasCombatName($name);
+### Managing Combat Status
+```php
+use AEDXDEV\Combat\Main as Combat;
 
-// To add the players to Combat
+// Add two players to combat
 Combat::getInstance()->addCombat($player1, $player2);
 
-// To add the names of the players to Combat
-Combat::getInstance()->addCombatName("playername1:playername2");
+```
 
-// To get the damager of the player
-/*return $player or null*/
+### Retrieving Combat Information
+```php
+use AEDXDEV\Combat\Main as Combat;
+
+// Get the player who is in combat with the specified player
+// Returns the other player or null if not found
 Combat::getInstance()->getPlayerCombat($player);
-
-// To remove the player from Combat
-/*return false if it not exists*/
-Combat::getInstance()->unCombat($player);
-
-// To remove the names of the players from Combat
-/*return false if it not exists*/
-Combat::getInstance()->unCombatPlayers("playername1:playername2");
 ```
 
-# Config
+### Checking If Two Players Are in the Same Combat
+```php
+use AEDXDEV\Combat\Main as Combat;
+
+// Check if two players are in the same combat
+// Returns true if the players are in combat with each other, false otherwise
+Combat::getInstance()->isInSameCombat($player1, $player2);
+
+### Removing Combat Status
+```php
+use AEDXDEV\Combat\Main as Combat;
+
+// Remove a player from combat
+// Returns false if the player was not in combat
+Combat::getInstance()->removeCombat($player);
+
+```
+
+## Configuration
+Configure the plugin through `config.yml`:
+
 ```yaml
-Enable: true
-Time: 10
+Enable: true # To enable/disable the plugin.
+CancelIfNotInSameCombat: false # To cancel actions if players are not in the same combat.
+sendMessages: true # To send messages during combat events.
+Messages:
+  Start: "§eYou are now in combat with {PLAYER}" # When a player enters combat with another player
+  InSameCombat: "§cYou cannot proceed because you are not fighting the same opponent. Please focus on your current combat!" # When a player tries to engage a different opponent while in combat
+  End: "§eYou are no longer in combat." # When a player's combat status ends
+Time: 10 # the combat duration (in secons)
 ```
 
-# Other
-- [YouTube](https://youtube.com/@AEDXDEV)
+## Other
+- [YouTube Channel](https://youtube.com/@AEDXDEV)
