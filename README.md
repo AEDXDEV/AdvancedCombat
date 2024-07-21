@@ -42,6 +42,7 @@ use AEDXDEV\Combat\Main as Combat;
 // Check if two players are in the same combat
 // Returns true if the players are in combat with each other, false otherwise
 Combat::getInstance()->isInSameCombat($player1, $player2);
+```
 
 ### Removing Combat Status
 ```php
