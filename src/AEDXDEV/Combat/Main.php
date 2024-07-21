@@ -21,9 +21,9 @@ class Main extends PluginBase implements Listener {
   // [Player1:Player2 => Time]
   private array $combat = [];
   
-  private Config $config;
+  public Config $config;
   
-  private bool $isEnable = true;
+  private bool $isPluginEnable = true;
   private bool $sameCombat = false;
   private bool $sendMessages = true;
   private array $messages = [];
@@ -44,7 +44,7 @@ class Main extends PluginBase implements Listener {
 		  "Time" => 10,
 		]);
 		$this->config = $config;
-	  $this->isEnable = $config->get("Enable", false);
+	  $this->isPluginEnable = $config->get("Enable", false);
 	  $this->sameCombat = $config->get("CancelIfNotInSameCombat", false);
 	  $this->sendMessages = $config->get("sendMessages", false);
 	  $this->messages = $config->get("Messages", [
@@ -62,9 +62,9 @@ class Main extends PluginBase implements Listener {
 	  if ($event instanceof EntityDamageByEntityEvent) {
 	    $damager = $event->getDamager();
 	    $entity = $event->getEntity();
-	    if (!$this->isEnabled || $event->isCancelled())return;
+	    if (!$this->isPluginEnabled || $event->isCancelled())return;
 	    if ($damager instanceof Player && $entity instanceof Player) {
-	      if ($player->isCreative() || $damager->isCreative())return;
+	      if ($entity->isCreative() || $damager->isCreative())return;
 	      if($entity->getHealth() <= $event->getFinalDamage()){
 	        $this->removeCombat($entity);
 	        return;
@@ -86,11 +86,11 @@ class Main extends PluginBase implements Listener {
 	  if ($projectile instanceof Arrow) {
 	    $owner = $projectile->getOwningEntity();
 	    $target = $event->getEntityHit();
-	    if (!$this->isEnabled || $event->isCancelled())return;
+	    if (!$this->isPluginEnabled || $event->isCancelled())return;
 	    if ($owner instanceof Player && $target instanceof Player) {
 	      if ($this->isInSameCombat($owner, $target) && $this->sameCombat) {
 	        if ($this->sendMessages) {
-	          $player->sendMessage($this->messages["InSameCombat"]);
+	          $owner->sendMessage($this->messages["InSameCombat"]);
 	        }
 	        $event->cancel();
 	        return;
@@ -125,7 +125,7 @@ class Main extends PluginBase implements Listener {
 	  $this->combat[$key] = $this->combatTime;
 	  if ($this->sendMessages) {
 	    $msg = str_replace("{PLAYER}", "", $this->messages["Start"]);
-	    $damager->sendMessage($msg . $targer->getName());
+	    $damager->sendMessage($msg . $target->getName());
 	    $target->sendMessage($msg . $damager->getName());
 	  }
   }
@@ -168,7 +168,7 @@ class Main extends PluginBase implements Listener {
 	private function handleCombatTask(): void{
 	  foreach ($this->combat as $key => $time) {
 	    if ($time <= 0) {
-	      $this->removeCombatByKey($key);
+	      unset($this->combat[$key]);
 	    } else {
 	      $this->combat[$key]--;
 	    }
