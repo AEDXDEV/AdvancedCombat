@@ -4,12 +4,11 @@ namespace AEDXDEV\Combat;
 
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
-use pocketmine\event\entity\ProjectileHitEvent;
-use pocketmine\event\entity\ProjectileHitEntityEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDamageByChildEntityEvent;
 use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\entity\projectile\Arrow;
+use pocketmine\entity\projectile\Projectile;
 use pocketmine\player\Player;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Config;
@@ -64,6 +63,10 @@ class Main extends PluginBase implements Listener {
 	    $damager = $event->getDamager();
 	    $entity = $event->getEntity();
 	    if (!$this->isPluginEnabled || $event->isCancelled())return;
+	    if ($event instanceof EntityDamageByChildEntityEvent) {
+	      $projectile = $event->getChild();
+	      if ($projectile !== null && !$projectile instanceof Projectile)return;
+	    }
 	    if ($damager instanceof Player && $entity instanceof Player) {
 	      if ($entity->isCreative() || $damager->isCreative())return;
 	      if ($this->isInSameCombat($damager, $entity) && $this->sameCombat) {
@@ -81,27 +84,6 @@ class Main extends PluginBase implements Listener {
 	    }
 	  }
 	}
-	
-	public function onProjectileHit(ProjectileHitEvent $event): void{
-	  $projectile = $event->getEntity();
-	  if ($event instanceof ProjectileHitEntityEvent) {
-	    if ($projectile instanceof Arrow) {
-  	    $owner = $projectile->getOwningEntity();
-  	    $target = $event->getEntityHit();
-  	    if (!$this->isPluginEnabled || $event->isCancelled())return;
-  	    if ($owner instanceof Player && $target instanceof Player) {
-  	      if ($this->isInSameCombat($owner, $target) && $this->sameCombat) {
-  	        if ($this->sendMessages) {
-  	          $owner->sendMessage($this->messages["InSameCombat"]);
-  	        }
-  	        $event->cancel();
-  	        return;
-  	      }
-  	      $this->addCombat($owner, $target);
-	      }
-	    }
-	  }
-  }
   
   public function onQuit(PlayerQuitEvent $event){
     $player = $event->getPlayer();
