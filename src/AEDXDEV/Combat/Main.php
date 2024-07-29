@@ -124,10 +124,10 @@ class Main extends PluginBase implements Listener {
     foreach ($this->combat as $key => $time) {
       [$name1, $name2] = explode(":", $key);
       if ($playerName === $name1) {
-        $target = $name1;
+        $target = $name2;
       }
       if ($playerName === $name2) {
-        $target = $name2;
+        $target = $name1;
       }
     }
     return $target !== null ? $this->getServer()->getPlayerExact($target) : null;
