@@ -1,4 +1,4 @@
-name: Combat
+name: AdvancedCombat
 description: To prevent the player from escaping during combat and knowing if the player is in Combat or not
 author: AEDXDEV
 version: 1.0.2
