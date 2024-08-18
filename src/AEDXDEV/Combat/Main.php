@@ -106,7 +106,7 @@ class Main extends PluginBase implements Listener {
       	  }
       	  $event = new CombatAttackEvent($damager, $entity, $sameCombat);
       	  $event->call();
-      	  if ($event->isCancelled() || $this->sameCombat) {
+      	  if ($event->isCancelled() || $this->sameCombat && !$sameCombat) {
       	    if ($this->sameCombat && $this->sendMessages) {
       	      $damager->sendMessage($this->messages["InSameCombat"]);
       	    }
@@ -172,6 +172,12 @@ class Main extends PluginBase implements Listener {
             $p->hidePlayer($pp);
           } else {
             $p->showPlayer($pp);
+          }
+        } else {
+          // Ensure the combat players can see each other
+          if (!$hide) {
+            $p->showPlayer($player1);
+            $p->showPlayer($player2);
           }
         }
       }
