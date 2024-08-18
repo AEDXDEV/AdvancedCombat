@@ -104,9 +104,9 @@ class Main extends PluginBase implements Listener {
       	    $this->combat[$this->getCombatId($damager)] = $combat;
       	    $sameCombat = true;
       	  }
-      	  $event = new CombatAttackEvent($damager, $entity, $sameCombat);
-      	  $event->call();
-      	  if ($event->isCancelled() || $this->sameCombat && !$sameCombat) {
+      	  $combatAttackEvent = new CombatAttackEvent($damager, $entity, $sameCombat);
+      	  $combatAttackEvent->call();
+      	  if ($combatAttackEvent->isCancelled() || $this->sameCombat && !$sameCombat) {
       	    if ($this->sameCombat && $this->sendMessages) {
       	      $damager->sendMessage($this->messages["InSameCombat"]);
       	    }
