@@ -153,21 +153,29 @@ class Main extends PluginBase implements Listener {
   	    "HidePlayers" => $event->getHidePlayers(),
   	    "Penalty" => $event->getPenalty()
   	  ];
-  	  foreach ([$player1, $player2] as $p){
-  	    $another = $player1->getName() === $p->getName() ? $player1 : $player2;
-  	    foreach ($this->getServer()->getOnlinePlayers() as $pp) {
-  	      if ($pp->getName() !== $another->getName()) {
-  	        $this->hideAllPlayers[$p->getName()][] = $pp->getName();
-  	        $p->hidePlayer($pp);
-  	      }
-  	    }
-  	  }
+  	  if ($this->hidePlayers || $event->getHidePlayers()) {
+    	  $this->handlePlayerVisibility($player1, $player2, true);
+	    }
   	  if ($this->sendMessages) {
   	    $msg = str_replace("{PLAYER}", "", $this->messages["Start"]);
   	    $player1->sendMessage($msg . $player2->getName());
   	    $player2->sendMessage($msg . $player1->getName());
   	  }
 	  }
+  }
+  
+  private function handlePlayerVisibility(Player $player1, Player $player2, bool $hide): void {
+    foreach ([$player1, $player2] as $p) {
+      foreach ($this->getServer()->getOnlinePlayers() as $pp) {
+        if ($pp !== $player1 && $pp !== $player2) {
+          if ($hide) {
+            $p->hidePlayer($pp);
+          } else {
+            $p->showPlayer($pp);
+          }
+        }
+      }
+    }
   }
   
   private function applyPenalty(Player $player): void{
@@ -219,14 +227,7 @@ class Main extends PluginBase implements Listener {
         $event->call();
         unset($this->combat[$id]);
         if ($this->hidePlayers) {
-          foreach ([$player1, $player2] as $p){
-            foreach ($this->hideAllPlayers[$p->getName()] as $pp){
-              if (($pp = $this->getPlayer($pp)) !== null) {
-                $p->showPlayer($pp);
-              }
-              unset($this->hideAllPlayers[$p->getName()]);
-            }
-      	  }
+          $this->handlePlayerVisibility($player1, $player2, false);
         }
         if ($this->sendMessages) {
          $player1->sendMessage($this->messages["End"]);
@@ -248,7 +249,7 @@ class Main extends PluginBase implements Listener {
 	  }
 	}
 	
-	private function getPlayer(?Player $player = null): Player{
+	private function getPlayer(?string $player = null): Player{
     return $this->getServer()->getPlayerExact($player ?? "");
   }
 }
