@@ -22,7 +22,7 @@ class Main extends PluginBase implements Listener {
   
   use SingletonTrait;
   
-  // [id => [player1, player2, time]]
+  // [id => [player1, player2, time, hidePlayers, penalty]]
   private array $combat = [];
   
   public Config $config;
@@ -149,7 +149,7 @@ class Main extends PluginBase implements Listener {
 	    $this->combat[] = [
   	    "Player1" => $player1->getName(),
   	    "Player2" => $player2->getName(),
-  	    "Time" => $this->combatTime,
+  	    "Time" => $event->getTime(),
   	    "HidePlayers" => $event->getHidePlayers(),
   	    "Penalty" => $event->getPenalty()
   	  ];
@@ -243,7 +243,7 @@ class Main extends PluginBase implements Listener {
 	      //unset($this->combat[$id]);
 	    } else {
 	      $data["Time"]--;
-	      $this->combat[$id]["Time"] = $data;
+	      $this->combat[$id] = $data;
 	    }
 	  }
 	}
