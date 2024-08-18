@@ -1,8 +1,8 @@
 <?php
 
-namespace AEDXDEV\Combat\event;
-
 declare(strict_types=1);
+
+namespace AEDXDEV\Combat\event;
 
 use pocketmine\event\Cancellable;
 use pocketmine\event\CancellableTrait;
