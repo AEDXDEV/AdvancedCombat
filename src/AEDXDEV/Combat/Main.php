@@ -105,7 +105,6 @@ class Main extends PluginBase implements Listener {
       	    $sameCombat = true;
       	  }
       	  $event = new CombatAttackEvent($damager, $entity, $sameCombat);
-      	  $event->setPenalty($this->penalty);
       	  $event->call();
       	  if ($event->isCancelled() || $this->sameCombat) {
       	    if ($this->sameCombat && $this->sendMessages) {
@@ -141,6 +140,7 @@ class Main extends PluginBase implements Listener {
 	
 	public function addCombat(Player $player1, Player $player2): void{
 	  $event = new CombatStartEvent($player1, $player2, $this->combatTime, $this->hidePlayers);
+	  $event->setPenalty($this->penalty);
 	  $event->call();
 	  if (!$event->isCancelled()) {
 	    if ($player2->getCurrentWindow() !== null){
@@ -182,16 +182,17 @@ class Main extends PluginBase implements Listener {
     $player->sendMessage($this->messages["QuitPenalty"]);
   }
   
-  public function getCombat(Player $player): array{
-    return $this->combat[$this->getCombatId($player)];
+  public function getCombat(Player $player): ?array{
+    return $this->combat[$this->getCombatId($player) ?? -1] ?? null;
   }
   
-  public function getCombatId(Player $player): int{
+  public function getCombatId(Player $player): ?int{
     foreach ($this->combat as $id => $data) {
 	    if (in_array($player->getName(), [$data["Player1"], $data["Player2"]])) {
 	      return $id;
 	    }
 	  }
+	  return null;
   }
   
   public function getPlayerCombat(Player $player): ?Player{
@@ -242,7 +243,7 @@ class Main extends PluginBase implements Listener {
 	      //unset($this->combat[$id]);
 	    } else {
 	      $data["Time"]--;
-	      $this->combat[$key]["Time"] = $data;
+	      $this->combat[$id]["Time"] = $data;
 	    }
 	  }
 	}
