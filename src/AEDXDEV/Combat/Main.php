@@ -30,7 +30,7 @@ class Main extends PluginBase implements Listener {
   private bool $isPluginEnabled = true;
   private bool $sameCombat = false;
   private bool $hidePlayers = false;
-  private array $hideAllPlayers = [];
+  //private array $hideAllPlayers = [];
   private bool $penalty = false;
   private array $penalties = [];
   private bool $sendMessages = true;
