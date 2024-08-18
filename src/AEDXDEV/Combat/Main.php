@@ -14,17 +14,25 @@ use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Config;
 use pocketmine\utils\SingletonTrait;
 
+use AEDXDEV\Combat\event\CombatStartEvent;
+use AEDXDEV\Combat\event\CombatAttackEvent;
+use AEDXDEV\Combat\event\CombatEndEvent;
+
 class Main extends PluginBase implements Listener {
   
   use SingletonTrait;
   
-  // [Player1:Player2 => Time]
+  // [id => [player1, player2, time]]
   private array $combat = [];
   
   public Config $config;
   
   private bool $isPluginEnabled = true;
   private bool $sameCombat = false;
+  private bool $hidePlayers = false;
+  private array $hideAllPlayers = [];
+  private bool $penalty = false;
+  private array $penalties = [];
   private bool $sendMessages = true;
   private array $messages = [];
   private int $combatTime = 10;
@@ -35,27 +43,42 @@ class Main extends PluginBase implements Listener {
 		$config = new Config($this->getDataFolder() . "config.yml", Config::YAML, [
 		  "Enable" => true,
 		  "CancelIfNotInSameCombat" => false,
+		  "Penalty" => false,
+		  "HidePlayers" => false,
+		  "Penalties" => [
+		    "Health" => 5,
+		    "ItemLoss" => true
+		  ],
 		  "sendMessages" => true,
 		  "Messages" => [
 		    "Start" => "§eYou are now in combat with {PLAYER}",
 		    "InSameCombat" => "§cYou cannot proceed because you are not fighting the same opponent. Please focus on your current combat!",
-		    "End" => "§eYou are no longer in combat."
+		    "End" => "§eYou are no longer in combat.",
+		    "QuitPenalty" => "§cYou have been penalized for leaving combat."
 		  ],
 		  "Time" => 10,
 		]);
 		$this->config = $config;
 	  $this->isPluginEnabled = $config->get("Enable", false);
 	  $this->sameCombat = $config->get("CancelIfNotInSameCombat", false);
+	  $this->hidePlayers = $config->get("HidePlayers", false);
+	  $this->penalty = $config->get("Penalty", false);
+	  $this->penalties = $config->get("Messages", [
+		  "Health" => 5,
+		  "ItemLoss" => true
+	  ]);
 	  $this->sendMessages = $config->get("sendMessages", false);
 	  $this->messages = $config->get("Messages", [
 	    "Start" => "§eYou are now in combat with {PLAYER}",
 	    "InSameCombat" => "§cYou cannot proceed because you are not fighting the same opponent. Please focus on your current combat!",
-	    "End" => "§eYou are no longer in combat."
+	    "End" => "§eYou are no longer in combat.",
+	    "QuitPenalty" => "§cYou have been penalized for leaving combat."
 	  ]);
 	  $this->combatTime = $config->get("Time", 10);
 	  $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(): void{
 	    $this->handleCombatTask();
 		}), 20);
+		
 	}
 	
 	public function onDamage(EntityDamageEvent $event): void{
@@ -68,17 +91,29 @@ class Main extends PluginBase implements Listener {
 	      if ($projectile !== null && !$projectile instanceof Projectile)return;
 	    }
 	    if ($damager instanceof Player && $entity instanceof Player) {
-	      if ($entity->isCreative() || $damager->isCreative())return;
-	      if ($this->isInSameCombat($damager, $entity) && $this->sameCombat) {
-	        if ($this->sendMessages) {
-	          $damager->sendMessage($this->messages["InSameCombat"]);
-	        }
-	        $event->cancel();
-	        return;
-	      }
+	      if ($damager->isCreative() || $entity->isCreative())return;
 	      if($entity->getHealth() <= $event->getFinalDamage()){
 	        $this->removeCombat($entity);
 	        return;
+	      }
+	      if ($this->isInCombat($entity) || $this->isInCombat($damager)){
+	        $sameCombat = false;
+	        if ($this->getCombat($damager) === $this->getCombat($entity)) {
+      	    $combat = $this->getCombat($damager);
+      	    $combat["Time"] = $this->combatTime;
+      	    $this->combat[$this->getCombatId($damager)] = $combat;
+      	    $sameCombat = true;
+      	  }
+      	  $event = new CombatAttackEvent($damager, $entity, $sameCombat);
+      	  $event->setPenalty($this->penalty);
+      	  $event->call();
+      	  if ($event->isCancelled() || $this->sameCombat) {
+      	    if ($this->sameCombat && $this->sendMessages) {
+      	      $damager->sendMessage($this->messages["InSameCombat"]);
+      	    }
+      	    $event->cancel();
+      	    return;
+      	  }
 	      }
 	      $this->addCombat($damager, $entity);
 	    }
@@ -88,78 +123,131 @@ class Main extends PluginBase implements Listener {
   public function onQuit(PlayerQuitEvent $event){
     $player = $event->getPlayer();
     if ($this->isInCombat($player)) {
+      if ($this->getCombat($player)["Penalty"]) {
+        $this->applyPenalty($player);
+      }
       $this->removeCombat($player);
     }
   }
   
   private function isInCombat(Player $player): bool{
-	  $name = $player->getName();
-	  foreach ($this->combat as $key => $time) {
-	    if (strpos($key, $name) !== false) {
+	  foreach ($this->combat as $id => $data) {
+	    if (in_array($player->getName(), [$data["Player1"], $data["Player2"]])) {
 	      return true;
 	    }
 	  }
     return false;
   }
 	
-	public function addCombat(Player $damager, Player $target): void{
-	  $key = $damager->getName() . ":" . $target->getName();
-	  if ($this->isInCombat($damager) || $this->isInCombat($target)) {
-	    return;
+	public function addCombat(Player $player1, Player $player2): void{
+	  $event = new CombatStartEvent($player1, $player2, $this->combatTime, $this->hidePlayers);
+	  $event->call();
+	  if (!$event->isCancelled()) {
+	    if ($player2->getCurrentWindow() !== null){
+  	    $player2->removeCurrentWindow();
+  	  }
+	    $this->combat[] = [
+  	    "Player1" => $player1->getName(),
+  	    "Player2" => $player2->getName(),
+  	    "Time" => $this->combatTime,
+  	    "HidePlayers" => $event->getHidePlayers(),
+  	    "Penalty" => $event->getPenalty()
+  	  ];
+  	  foreach ([$player1, $player2] as $p){
+  	    $another = $player1->getName() === $p->getName() ? $player1 : $player2;
+  	    foreach ($this->getServer()->getOnlinePlayers() as $pp) {
+  	      if ($pp->getName() !== $another->getName()) {
+  	        $this->hideAllPlayers[$p->getName()][] = $pp->getName();
+  	        $p->hidePlayer($pp);
+  	      }
+  	    }
+  	  }
+  	  if ($this->sendMessages) {
+  	    $msg = str_replace("{PLAYER}", "", $this->messages["Start"]);
+  	    $player1->sendMessage($msg . $player2->getName());
+  	    $player2->sendMessage($msg . $player1->getName());
+  	  }
 	  }
-	  if ($target->getCurrentWindow() !== null){
-	    $target->removeCurrentWindow();
-	  }
-	  $this->combat[$key] = $this->combatTime;
-	  if ($this->sendMessages) {
-	    $msg = str_replace("{PLAYER}", "", $this->messages["Start"]);
-	    $damager->sendMessage($msg . $target->getName());
-	    $target->sendMessage($msg . $damager->getName());
+  }
+  
+  private function applyPenalty(Player $player): void{
+    if ($this->penalties["Health"] > 0) {
+      $health = $player->getHealth() - $this->penalties["Health"];
+      if ($health < 0)return;
+      $player->setHealth($health);
+    }
+    if ($this->penalties["ItemLoss"]) {
+      $player->getInventory()->clearAll();
+    }
+    $player->sendMessage($this->messages["QuitPenalty"]);
+  }
+  
+  public function getCombat(Player $player): array{
+    return $this->combat[$this->getCombatId($player)];
+  }
+  
+  public function getCombatId(Player $player): int{
+    foreach ($this->combat as $id => $data) {
+	    if (in_array($player->getName(), [$data["Player1"], $data["Player2"]])) {
+	      return $id;
+	    }
 	  }
   }
   
   public function getPlayerCombat(Player $player): ?Player{
     $playerName = $player->getName();
     $target = null;
-    foreach ($this->combat as $key => $time) {
-      [$name1, $name2] = explode(":", $key);
+    foreach ($this->combat as $id => $data) {
+      [$name1, $name2] = $data;
       if ($playerName === $name1) {
         $target = $name2;
-      }
-      if ($playerName === $name2) {
+      } elseif ($playerName === $name2) {
         $target = $name1;
       }
     }
     return $target !== null ? $this->getServer()->getPlayerExact($target) : null;
   }
   
-  public function isInSameCombat(Player $player1, Player $player2): bool{
-    $key1 = $player1->getName() . ":" . $player2->getName();
-    $key2 = $player2->getName() . ":" . $player1->getName();
-    return isset($this->combat[$key1]) || isset($this->combat[$key2]);
-  }
-  
   public function removeCombat(Player $player): void{
     $name = $player->getName();
-    foreach ($this->combat as $key => $time) {
-      if (strpos($key, $name) !== false) {
-        unset($this->combat[$key]);
+    foreach ($this->combat as $id => $data) {
+      if (in_array($player->getName(), [$data["Player1"], $data["Player2"]])) {
+        $player1 = $this->getPlayer($data["Player1"]);
+        $player2 = $this->getPlayer($data["Player2"]);
+        $event = new CombatEndEvent($player1, $player2);
+        $event->call();
+        unset($this->combat[$id]);
+        if ($this->hidePlayers) {
+          foreach ([$player1, $player2] as $p){
+            foreach ($this->hideAllPlayers[$p->getName()] as $pp){
+              if (($pp = $this->getPlayer($pp)) !== null) {
+                $p->showPlayer($pp);
+              }
+              unset($this->hideAllPlayers[$p->getName()]);
+            }
+      	  }
+        }
         if ($this->sendMessages) {
-    	    $player->sendMessage($this->messages["End"]);
-    	    $p = $this->getServer()->getPlayerExact(str_replace([$name, ":"], "", $key));
-    	    $p->sendMessage($this->messages["End"]);
-    	  }
+         $player1->sendMessage($this->messages["End"]);
+         $player2->sendMessage($this->messages["End"]);
+        }
       }
     }
   }
 	
 	private function handleCombatTask(): void{
-	  foreach ($this->combat as $key => $time) {
-	    if ($time <= 0) {
-	      unset($this->combat[$key]);
+	  foreach ($this->combat as $id => $data) {
+	    if ($data["Time"] <= 0) {
+	      $this->removeCombat($this->getPlayer($data["Player1"]));
+	      //unset($this->combat[$id]);
 	    } else {
-	      $this->combat[$key]--;
+	      $data["Time"]--;
+	      $this->combat[$key]["Time"] = $data;
 	    }
 	  }
 	}
+	
+	private function getPlayer(?Player $player = null): Player{
+    return $this->getServer()->getPlayerExact($player ?? "");
+  }
 }
