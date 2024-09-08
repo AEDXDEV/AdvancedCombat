@@ -213,11 +213,10 @@ class Main extends PluginBase implements Listener {
     $playerName = $player->getName();
     $target = null;
     foreach ($this->combat as $id => $data) {
-      [$name1, $name2] = $data;
-      if ($playerName === $name1) {
-        $target = $name2;
-      } elseif ($playerName === $name2) {
-        $target = $name1;
+      if ($playerName === $data["Player1"]) {
+        $target = $data["Player2"];
+      } elseif ($playerName === $data["Player2"]) {
+        $target = $data["Player1"];
       }
     }
     return $target !== null ? $this->getServer()->getPlayerExact($target) : null;
