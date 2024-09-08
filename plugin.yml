@@ -1,6 +1,6 @@
 name: AdvancedCombat
 description: This plugin prevents players from escaping during combat, manages combat interactions, and handles penalties for leaving combat.
 author: AEDXDEV
-version: 1.1.1
+version: 1.1.2
 main: AEDXDEV\Combat\Main
 api: 5.0.0
