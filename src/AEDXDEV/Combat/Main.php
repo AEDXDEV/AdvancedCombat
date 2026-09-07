@@ -271,7 +271,7 @@ class Main extends PluginBase{
     $pos = $player->getPosition();
     $data = $this->getConfig()->getNested("Sounds.{$sound}", null);
     if ($data == null || empty($data["name"] ?? ""))return;
-    $pk = PlaySoundPacket::create($data["name"], $pos->getX(), $pos->getY(), $pos->getZ(), ($data["volume"] ?? 1), ($data["pitch"] ?? 1));
+    $pk = PlaySoundPacket::create($data["name"], $pos->getX(), $pos->getY(), $pos->getZ(), ($data["volume"] ?? 1), ($data["pitch"] ?? 1), 0, null);
     $player->getNetworkSession()->sendDataPacket($pk);
   }
 }
